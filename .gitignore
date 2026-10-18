@@ -1,0 +1,8 @@
+.terraform/
+.DS_Store
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.lock.hcl
+.dev-provider/
+.dev.tfrc
