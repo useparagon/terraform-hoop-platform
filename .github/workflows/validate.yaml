@@ -45,13 +45,13 @@ jobs:
       - name: terraform > test
         run: terraform test -no-color
 
-      - name: terraform > checkov
-        uses: bridgecrewio/checkov-action@a050c269d5ff0d9dc04f4826f3d268ace7b05592
+      - name: python > setup
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
-          framework: terraform,github_actions
-          directory: .
-          quiet: "true"
-          compact: "true"
+          python-version: "3.12"
+
+      - name: terraform > checkov
+        run: pip install checkov==3.4.3 && checkov -d . --framework terraform github_actions --quiet --compact
 
       - name: terraform > verify README
         uses: terraform-docs/gh-actions@6de6da0cefcc6b4b7a5cbea4d79d97060733093c

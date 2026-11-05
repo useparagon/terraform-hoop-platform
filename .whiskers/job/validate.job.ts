@@ -24,15 +24,14 @@ export class ValidateJob extends GithubActionWorkflowJob {
         new TerraformCheckStep('validate'),
         new TerraformCheckStep('test'),
         new GithubActionWorkflowStep({
+          name: 'python > setup',
+          uses: GithubAction.SETUP_PYTHON,
+          with: { 'python-version': '3.12' },
+        }),
+        new GithubActionWorkflowStep({
+          // The checkov-action bundles Checkov 2, which cannot scan two frameworks at once.
           name: 'terraform > checkov',
-          uses: GithubAction.CHECKOV,
-          with: {
-            // The module and the workflows. secrets is empty here and would only add noise.
-            framework: 'terraform,github_actions',
-            directory: '.',
-            quiet: 'true',
-            compact: 'true',
-          },
+          run: 'pip install checkov==3.4.3 && checkov -d . --framework terraform github_actions --quiet --compact',
         }),
         new TerraformDocsStep(),
       ],
