@@ -112,7 +112,7 @@ Releases are manual: run the `release` workflow on `main`. The version comes fro
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
-| <a name="requirement_helm"></a> [helm](#requirement\_helm) | >= 2.0.0, < 3.0.0 |
+| <a name="requirement_helm"></a> [helm](#requirement\_helm) | >= 2.13.0, < 4.0.0 |
 | <a name="requirement_hoop"></a> [hoop](#requirement\_hoop) | >= 0.0.21, < 0.1.0 |
 | <a name="requirement_http"></a> [http](#requirement\_http) | >= 3.0.0 |
 | <a name="requirement_kubernetes"></a> [kubernetes](#requirement\_kubernetes) | >= 2.20.0, < 3.0.0 |
