@@ -6,3 +6,6 @@
 .terraform.lock.hcl
 .dev-provider/
 .dev.tfrc
+
+node_modules/
+yarn-error.log

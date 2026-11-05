@@ -106,6 +106,13 @@ terraform test
 terraform-docs markdown table --hide providers --output-file README.md --output-mode inject .
 ```
 
+Workflows live in `.whiskers` and the YAML under `.github/workflows` is generated. After changing a workflow, regenerate it:
+
+```sh
+yarn ci:compile   # writes .github/workflows/*.yaml
+yarn ci:verify    # fails when the YAML drifts from the Whiskers sources
+```
+
 Releases are manual: run the `release` workflow on `main` and choose the bump (`minor` for new optional inputs, `major` for breaking changes).
 
 <!-- BEGIN_TF_DOCS -->

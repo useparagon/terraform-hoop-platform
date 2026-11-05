@@ -1,12 +1,19 @@
+## ---------------------------------------------------
+##     |\---/|                                       
+##     | ,_, |               !! DO NOT MODIFY !!      
+##      \_`_/-..----.    file managed by `whiskers`  
+##   ___/ `   ' ,""+ \                              
+##  (__...'   __\    |`.___.';                       
+##    (_,...'(_,.`__)/'.....+                         
+## ---------------------------------------------------
+
 name: release
 
-# Manual on purpose: every tag is a version consumers can pin, so a release is a
-# decision, not a side effect of merging.
 on:
   workflow_dispatch:
     inputs:
       bump:
-        description: "Version bump (semver). minor for new optional inputs, major for breaking changes."
+        description: Version bump (semver). minor for new optional inputs, major for breaking changes.
         type: choice
         options:
           - patch
@@ -14,38 +21,51 @@ on:
           - major
         default: minor
 
-permissions:
-  contents: write
-  pull-requests: read
-
 concurrency:
   group: hoop-module-release
   cancel-in-progress: false
 
+permissions:
+  contents: write
+  pull-requests: read
+
 jobs:
   release:
-    if: github.ref == 'refs/heads/main'
+    name: release
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+
+      - name: git > checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: main
 
-      - uses: hashicorp/setup-terraform@v3
+      - name: terraform > setup
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
         with:
-          terraform_version: "1.14.8"
+          terraform_version: 1.14.8
 
-      - run: terraform fmt -check -recursive
+      - name: terraform > fmt
+        run: terraform fmt -check -recursive
 
-      - run: terraform init -backend=false -input=false
-      - run: terraform validate
-      - run: terraform test -no-color
+      - name: terraform > init
+        run: terraform init -backend=false -input=false
 
-      - name: Create release
-        uses: rymndhng/release-on-push-action@v0.28.0
+      - name: terraform > validate
+        run: terraform validate
+
+      - name: terraform > test
+        run: terraform test -no-color
+
+      - name: release > create
         env:
           GITHUB_TOKEN: ${{ github.token }}
+        uses: rymndhng/release-on-push-action@aebba2bbce07a9474bf95e8710e5ee8a9e922fe2
         with:
           bump_version_scheme: ${{ inputs.bump }}
           tag_prefix: v
-          use_github_release_notes: true
+          use_github_release_notes: "true"

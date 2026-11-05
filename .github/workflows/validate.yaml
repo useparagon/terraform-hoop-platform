@@ -1,42 +1,52 @@
+## ---------------------------------------------------
+##     |\---/|                                       
+##     | ,_, |               !! DO NOT MODIFY !!      
+##      \_`_/-..----.    file managed by `whiskers`  
+##   ___/ `   ' ,""+ \                              
+##  (__...'   __\    |`.___.';                       
+##    (_,...'(_,.`__)/'.....+                         
+## ---------------------------------------------------
+
 name: validate
 
 on:
-  pull_request:
-  workflow_dispatch:
+  pull_request: {}
+  workflow_dispatch: {}
 
 permissions:
   contents: read
 
 jobs:
   terraform:
+    name: terraform
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
 
-      - name: setup terraform
-        uses: hashicorp/setup-terraform@v3
+      - name: git > checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: terraform > setup
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
         with:
-          terraform_version: "1.14.8"
+          terraform_version: 1.14.8
 
-      - name: fmt
+      - name: terraform > fmt
         run: terraform fmt -check -recursive
 
-      - name: init
+      - name: terraform > init
         run: terraform init -backend=false -input=false
 
-      - name: validate
+      - name: terraform > validate
         run: terraform validate
 
-      - name: test
+      - name: terraform > test
         run: terraform test -no-color
 
-      - name: Verify generated README
-        uses: terraform-docs/gh-actions@v1.4.1
+      - name: terraform > verify README
+        uses: terraform-docs/gh-actions@6de6da0cefcc6b4b7a5cbea4d79d97060733093c
         with:
           working-dir: .
           output-file: README.md
           output-method: inject
-          fail-on-diff: true
-          # Provider versions in the table follow whatever init resolved, which would make the diff flaky.
+          fail-on-diff: "true"
           args: --hide providers

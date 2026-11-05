@@ -1,0 +1,13 @@
+{
+  "name": "terraform-hoop-platform",
+  "private": true,
+  "scripts": {
+    "ci:compile": "whiskers",
+    "ci:verify": "whiskers verify"
+  },
+  "devDependencies": {
+    "@useparagon/whiskers-cli": "2026.5.12",
+    "@useparagon/whiskers-core": "2026.5.12",
+    "typescript": "^7.0.2"
+  }
+}
