@@ -6,6 +6,7 @@ import { ValidateJob } from '../job/validate.job';
 export default new GithubActionWorkflow({
   name: 'validate',
   on: {
+    push: { branches: ['main'] },
     pull_request: {},
     workflow_dispatch: {},
   },
