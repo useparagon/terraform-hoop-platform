@@ -7,11 +7,12 @@ mock_provider "time" {}
 
 # No helm version or image is given, so the module defaults apply.
 variables {
-  agent      = { create = false }
-  agent_id   = "agent-existing"
-  hoop_key   = "grpcs://agent:placeholder@example.test?mode=standard"
-  helm       = { namespace = "paragon" }
-  defaults   = { access_control_groups = [], postgres_guardrail_rules = [], redis_guardrail_rules = [] }
+  agent            = { create = false }
+  agent_id         = "agent-existing"
+  hoop_key         = "grpcs://agent:placeholder@example.test?mode=standard"
+  helm             = {}
+  kubernetes_admin = { enabled = false }
+  defaults         = { access_control_groups = [], postgres_guardrail_rules = [], redis_guardrail_rules = [] }
 }
 
 run "helm_defaults" {
@@ -20,5 +21,24 @@ run "helm_defaults" {
   assert {
     condition     = helm_release.agent.version == "1.184.2" && contains([for setting in helm_release.agent.set : "${setting.name}=${setting.value}"], "image.repository=useparagon/hoop-agent-tools") && contains([for setting in helm_release.agent.set : "${setting.name}=${setting.value}"], "image.tag=1.2.1")
     error_message = "The chart version and the Paragon agent image must be the defaults."
+  }
+
+  assert {
+    condition     = helm_release.agent.namespace == "paragon"
+    error_message = "The agent must land in the paragon namespace by default."
+  }
+}
+
+run "environment_tag" {
+  command = plan
+
+  variables {
+    environment = "production"
+    connections = { grafana = { type = "application", subtype = "tcp" } }
+  }
+
+  assert {
+    condition     = hoop_connection.this["grafana"].tags["environment"] == "prod"
+    error_message = "production must be tagged as prod."
   }
 }

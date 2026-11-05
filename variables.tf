@@ -39,7 +39,7 @@ variable "agent_key" {
 variable "helm" {
   description = "Helm release configuration. Set namespace, chart version, and the Paragon-built agent image repository (including its registry when needed) and immutable image tag explicitly. The chart version and agent image tag are independent. service_account carries cloud workload-identity annotations (eks.amazonaws.com/role-arn, azure.workload.identity/client-id, iam.gke.io/gcp-service-account); values adds any further chart values."
   type = object({
-    namespace        = string
+    namespace        = optional(string, "paragon")
     version          = optional(string, "1.184.2")
     image_repository = optional(string, "useparagon/hoop-agent-tools")
     image_tag        = optional(string, "1.2.1")
@@ -115,11 +115,24 @@ variable "agent_id" {
   }
 }
 
+variable "environment" {
+  description = "Deployment environment. Sets the environment tag on every connection (production becomes prod)."
+  type        = string
+  default     = "staging"
+
+  validation {
+    condition     = contains(["staging", "production"], var.environment)
+    error_message = "environment must be staging or production."
+  }
+}
+
 variable "kubernetes_admin" {
   description = <<-EOT
-    kubectl connection backed by a ServiceAccount, a ClusterRoleBinding and a token Secret. null disables it.
+    kubectl connection backed by a ServiceAccount, a ClusterRoleBinding and a token Secret. Set enabled = false to skip it.
 
-    The ClusterRoleBinding is cluster-scoped, so set resource_suffix when several agents share one cluster. extra_secrets adds connection secrets beyond the token, such as the IRSA environment variables a kubectl session needs to assume the support role.
+    irsa (default true) injects the env vars an EKS kubectl session needs to assume the support role, taken from the eks.amazonaws.com/role-arn annotation. Set it false on AKS and GKE.
+
+    The ClusterRoleBinding is cluster-scoped, so set resource_suffix when several agents share one cluster.
   EOT
   type = object({
     enabled               = optional(bool, true)
@@ -132,6 +145,7 @@ variable "kubernetes_admin" {
     remote_url            = optional(string, "https://kubernetes.default.svc.cluster.local")
     insecure              = optional(bool, true)
     kubectl_namespace     = optional(string)
+    irsa                  = optional(bool, true)
     extra_secrets         = optional(map(string), {})
     tags                  = optional(map(string), {})
     guardrail_rules       = optional(list(string), [])
@@ -141,7 +155,7 @@ variable "kubernetes_admin" {
     access_mode_exec      = optional(string, "enabled")
     access_mode_connect   = optional(string, "enabled")
   })
-  default = null
+  default = {}
 }
 
 variable "defaults" {

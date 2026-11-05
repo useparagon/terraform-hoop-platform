@@ -21,9 +21,10 @@ override_data {
 }
 
 variables {
-  agent_name = "acme"
-  agent      = { api_url = "https://hoop.example.test/api", api_key = "hpk_placeholder" }
-  helm       = { namespace = "paragon", version = "1.0.0", image_repository = "useparagon/hoop-agent-tools", image_tag = "1.2.1" }
+  agent_name       = "acme"
+  kubernetes_admin = { enabled = false }
+  agent            = { api_url = "https://hoop.example.test/api", api_key = "hpk_placeholder" }
+  helm             = { namespace = "paragon", version = "1.0.0", image_repository = "useparagon/hoop-agent-tools", image_tag = "1.2.1" }
 }
 
 run "registers_agent_and_uses_its_key" {

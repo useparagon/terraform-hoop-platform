@@ -22,10 +22,6 @@ variables {
 run "kubectl_connection_uses_service_account_token" {
   command = apply
 
-  variables {
-    kubernetes_admin = {}
-  }
-
   assert {
     condition     = kubernetes_service_account.admin[0].metadata[0].name == "hoop-cluster-admin" && kubernetes_cluster_role_binding.admin[0].metadata[0].name == "hoop-cluster-admin" && kubernetes_secret.admin_token[0].metadata[0].name == "hoop-cluster-admin-token"
     error_message = "Default object names must stay identical to the ones already deployed."
@@ -65,11 +61,52 @@ run "shared_cluster_suffix_and_extra_secrets" {
   }
 }
 
-run "disabled_by_default" {
+run "irsa_secrets_come_from_the_annotation" {
+  command = apply
+
+  variables {
+    helm = {
+      namespace = "paragon"
+      service_account = {
+        annotations = { "eks.amazonaws.com/role-arn" = "arn:aws:iam::123456789012:role/hoop-support" }
+      }
+    }
+  }
+
+  assert {
+    condition     = hoop_connection.this["k8s-admin"].secrets["envvar:AWS_ROLE_ARN"] == "arn:aws:iam::123456789012:role/hoop-support" && hoop_connection.this["k8s-admin"].secrets["envvar:AWS_WEB_IDENTITY_TOKEN_FILE"] == "/var/run/secrets/eks.amazonaws.com/serviceaccount/token"
+    error_message = "The kubectl connection must assume the support role from the ServiceAccount annotation."
+  }
+}
+
+run "irsa_is_skipped_for_other_clouds" {
+  command = apply
+
+  variables {
+    kubernetes_admin = { irsa = false }
+    helm = {
+      namespace = "paragon"
+      service_account = {
+        annotations = { "iam.gke.io/gcp-service-account" = "hoop@demo.iam.gserviceaccount.com" }
+      }
+    }
+  }
+
+  assert {
+    condition     = !contains(keys(hoop_connection.this["k8s-admin"].secrets), "envvar:AWS_ROLE_ARN")
+    error_message = "AKS and GKE connections must not get AWS environment variables."
+  }
+}
+
+run "can_be_disabled" {
   command = plan
+
+  variables {
+    kubernetes_admin = { enabled = false }
+  }
 
   assert {
     condition     = length(kubernetes_service_account.admin) == 0 && length(hoop_connection.this) == 0
-    error_message = "Without kubernetes_admin the module must not create cluster objects or connections."
+    error_message = "enabled = false must not create cluster objects or the kubectl connection."
   }
 }

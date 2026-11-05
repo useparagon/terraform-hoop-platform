@@ -6,9 +6,10 @@ mock_provider "http" {}
 mock_provider "time" {}
 
 variables {
-  agent    = { create = false }
-  agent_id = "agent-existing"
-  helm     = { namespace = "paragon", version = "1.0.0", image_repository = "useparagon/hoop-agent-tools", image_tag = "1.2.1" }
+  agent            = { create = false }
+  kubernetes_admin = { enabled = false }
+  agent_id         = "agent-existing"
+  helm             = { namespace = "paragon", version = "1.0.0", image_repository = "useparagon/hoop-agent-tools", image_tag = "1.2.1" }
 }
 
 # The caller stores token and gateway separately; the module assembles HOOP_KEY.

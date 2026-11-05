@@ -6,9 +6,10 @@ mock_provider "http" {}
 mock_provider "time" {}
 
 variables {
-  agent    = { create = false }
-  hoop_key = "grpcs://agent:placeholder@example.test?mode=standard"
-  helm     = { namespace = "paragon", version = "1.0.0", image_repository = "useparagon/hoop-agent-tools", image_tag = "1.2.1" }
+  agent            = { create = false }
+  kubernetes_admin = { enabled = false }
+  hoop_key         = "grpcs://agent:placeholder@example.test?mode=standard"
+  helm             = { namespace = "paragon", version = "1.0.0", image_repository = "useparagon/hoop-agent-tools", image_tag = "1.2.1" }
 }
 
 run "invalid_agent_id" {

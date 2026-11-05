@@ -91,7 +91,16 @@ locals {
     )
   )
 
-  kubernetes_admin_enabled = var.kubernetes_admin != null && var.kubernetes_admin.enabled
+  kubernetes_admin_enabled = var.kubernetes_admin.enabled
+
+  # An EKS kubectl session starts with a clean environment, so the ServiceAccount's
+  # IRSA variables never reach it. Injecting them is what makes the session assume
+  # the support role. AKS and GKE authenticate without this, so they set irsa = false.
+  irsa_role_arn = try(var.helm.service_account.annotations["eks.amazonaws.com/role-arn"], null)
+  irsa_secrets = var.kubernetes_admin.irsa && local.irsa_role_arn != null ? {
+    "envvar:AWS_ROLE_ARN"                = local.irsa_role_arn
+    "envvar:AWS_WEB_IDENTITY_TOKEN_FILE" = "/var/run/secrets/eks.amazonaws.com/serviceaccount/token"
+  } : {}
 
   kubernetes_admin_connection = local.kubernetes_admin_enabled ? {
     "k8s-admin" = {
@@ -101,6 +110,7 @@ locals {
       command = ["bash"]
       secrets = merge(
         var.kubernetes_admin.extra_secrets,
+        local.irsa_secrets,
         {
           "envvar:REMOTE_URL"           = var.kubernetes_admin.remote_url
           "envvar:INSECURE"             = tostring(var.kubernetes_admin.insecure)
@@ -125,7 +135,11 @@ locals {
 
   all_connections = {
     for key, conn in local.merged_connections : key => merge(conn, {
-      tags = merge(var.defaults.tags, conn.tags)
+      tags = merge(
+        { environment = var.environment == "production" ? "prod" : "staging" },
+        var.defaults.tags,
+        conn.tags,
+      )
       access_control_groups = (
         length(conn.access_control_groups) > 0
         ? conn.access_control_groups
