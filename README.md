@@ -113,7 +113,7 @@ yarn ci:compile   # writes .github/workflows/*.yaml
 yarn ci:verify    # fails when the YAML drifts from the Whiskers sources
 ```
 
-Releases are manual: run the `release` workflow on `main` and choose the bump (`minor` for new optional inputs, `major` for breaking changes).
+Releases are manual: run the `release` workflow on `main`. The version comes from the commits since the last tag, the same rules `agent-os` uses: `feat` bumps the minor, `fix` bumps the patch, and a breaking change (`feat!:` or a `BREAKING CHANGE:` footer) bumps the major. Commits that change nothing releasable (`chore`, `docs`, `ci`) produce no tag. The first release, with no tag yet, becomes `v0.1.0`.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

@@ -1,11 +1,12 @@
-import { GithubActionWorkflowJob, GithubActionWorkflowStep, wrap } from '@useparagon/whiskers-core';
+import { GithubActionWorkflowJob, GithubActionWorkflowStep } from '@useparagon/whiskers-core';
 
-import { GithubAction, JobId, WorkflowInput } from '../whiskers.constants';
+import { GithubAction, JobId } from '../whiskers.constants';
 import { SetupTerraformStep, TerraformCheckStep } from '../step/terraform/terraform.step';
 
 /**
- * Every tag is a version consumers pin, so a release is a manual decision.
- * The same checks as validate run first; a failing check never produces a tag.
+ * A release is a manual decision. The version comes from the commits since the
+ * last stable tag (feat = minor, fix = patch, breaking = major), the same rules
+ * agent-os uses, so the workflow takes no inputs. Nothing releasable means no tag.
  */
 export class ReleaseJob extends GithubActionWorkflowJob {
   constructor() {
@@ -16,13 +17,12 @@ export class ReleaseJob extends GithubActionWorkflowJob {
       'runs-on': 'ubuntu-latest',
       permissions: {
         contents: 'write',
-        'pull-requests': 'read',
       },
       steps: [
         new GithubActionWorkflowStep({
           name: 'git > checkout',
           uses: GithubAction.CHECKOUT,
-          with: { ref: 'main' },
+          with: { ref: 'main', 'fetch-depth': '0' },
         }),
         new SetupTerraformStep(),
         new TerraformCheckStep('fmt'),
@@ -30,14 +30,22 @@ export class ReleaseJob extends GithubActionWorkflowJob {
         new TerraformCheckStep('validate'),
         new TerraformCheckStep('test'),
         new GithubActionWorkflowStep({
-          name: 'release > create',
-          uses: GithubAction.RELEASE,
-          env: { GITHUB_TOKEN: wrap('github.token') },
-          with: {
-            bump_version_scheme: wrap(`inputs.${WorkflowInput.BUMP}`),
-            tag_prefix: 'v',
-            use_github_release_notes: 'true',
-          },
+          id: 'version',
+          name: 'release > version',
+          run: [
+            'git fetch --tags --force',
+            'range=$(git describe --tags --abbrev=0 --match "v[0-9]*" 2>/dev/null || git rev-list --max-parents=0 HEAD)',
+            'messages=$(git log --format=%B "$range"..HEAD)',
+            'version=$(node --experimental-strip-types scripts/release/cli.ts "$messages")',
+            'echo "version=$version" >> "$GITHUB_OUTPUT"',
+            'echo "skip=$([ -z "$version" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"',
+          ].join('\n'),
+        }),
+        new GithubActionWorkflowStep({
+          name: 'release > tag',
+          if: "steps.version.outputs.skip != 'true'",
+          run: 'gh release create "v${{ steps.version.outputs.version }}" --target main --generate-notes --title "v${{ steps.version.outputs.version }}"',
+          env: { GH_TOKEN: '${{ github.token }}' },
         }),
       ],
     });

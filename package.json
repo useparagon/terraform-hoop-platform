@@ -1,6 +1,7 @@
 {
   "name": "terraform-hoop-platform",
   "private": true,
+  "type": "module",
   "scripts": {
     "ci:compile": "whiskers",
     "ci:verify": "whiskers verify"

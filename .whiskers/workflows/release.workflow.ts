@@ -1,11 +1,11 @@
 import { GithubActionWorkflow } from '@useparagon/whiskers-core';
 
-import { WorkflowInput } from '../whiskers.constants';
 import { ReleaseJob } from '../job/release.job';
 
 /**
  * Manual on purpose: every tag is a version consumers can pin, so a release is
- * a decision, not a side effect of merging.
+ * a decision, not a side effect of merging. The version is computed from the
+ * commits, so the workflow takes no inputs.
  */
 export default new GithubActionWorkflow({
   name: 'release',
@@ -14,21 +14,10 @@ export default new GithubActionWorkflow({
     'cancel-in-progress': false,
   },
   on: {
-    workflow_dispatch: {
-      inputs: {
-        [WorkflowInput.BUMP]: {
-          description:
-            'Version bump (semver). minor for new optional inputs, major for breaking changes.',
-          type: 'choice',
-          options: ['patch', 'minor', 'major'],
-          default: 'minor',
-        },
-      },
-    },
+    workflow_dispatch: {},
   },
   permissions: {
     contents: 'write',
-    'pull-requests': 'read',
   },
   jobs: [new ReleaseJob()],
 });
