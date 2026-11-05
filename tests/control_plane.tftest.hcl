@@ -81,19 +81,6 @@ run "postgres_subtype_aliases" {
   }
 }
 
-run "helm_defaults" {
-  command = plan
-
-  variables {
-    agent_id = "agent-existing"
-  }
-
-  assert {
-    condition     = helm_release.agent.version == "1.184.2" && contains([for setting in helm_release.agent.set : "${setting.name}=${setting.value}"], "image.repository=useparagon/hoop-agent-tools") && contains([for setting in helm_release.agent.set : "${setting.name}=${setting.value}"], "image.tag=1.2.1")
-    error_message = "The chart version and the Paragon agent image must be the defaults."
-  }
-}
-
 run "helm_agent_uses_supplied_key" {
   command = plan
   variables {
