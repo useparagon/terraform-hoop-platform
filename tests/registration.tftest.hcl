@@ -41,7 +41,7 @@ run "registers_agent_and_uses_its_key" {
   }
 
   assert {
-    condition     = [for s in helm_release.agent.set_sensitive : s.value if s.name == "config.HOOP_KEY"][0] == "grpcs://acme:tok-123@hoop-grpc.ops.paragoninternal.com:8443?mode=standard"
+    condition     = yamldecode(helm_release.agent.values[1]).config.HOOP_KEY == "grpcs://acme:tok-123@hoop-grpc.ops.paragoninternal.com:8443?mode=standard"
     error_message = "The DSN returned at registration must become the agent HOOP_KEY."
   }
 }

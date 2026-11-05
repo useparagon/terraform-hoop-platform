@@ -15,6 +15,19 @@ locals {
   registered_hoop_key = local.agent_registered ? "grpcs://${local.registered_parts.name}:${local.registered_parts.token}@${local.grpc_server}?mode=${coalesce(local.registered_parts.mode, var.agent.mode)}" : null
   agent_id            = local.agent_registered ? jsondecode(data.http.agent[0].response_body).id : var.agent_id
 
+  # The agent image and its key. yamlencode keeps the key out of the plan diff
+  # the same way a sensitive value does: the whole values list is sensitive
+  # once it contains one.
+  agent_values = yamlencode({
+    image = {
+      repository = var.helm.image_repository
+      tag        = var.helm.image_tag
+    }
+    config = {
+      HOOP_KEY = local.hoop_key
+    }
+  })
+
   # Chart values that carry the ServiceAccount (and its workload-identity annotations).
   # Placed first so values supplied by the caller in helm.values can still override them.
   service_account_values = yamlencode({

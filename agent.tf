@@ -9,30 +9,12 @@ resource "helm_release" "agent" {
   namespace        = var.helm.namespace
   create_namespace = var.helm.create_namespace
 
-  values          = concat([local.service_account_values], var.helm.values)
+  # set blocks need Helm provider 2.13 or newer, and observability still pins an
+  # older one, so the image and the key travel as values instead.
+  values          = concat([local.service_account_values, local.agent_values], var.helm.values)
   atomic          = true
   cleanup_on_fail = true
   timeout         = var.helm.timeout
-
-  # Helm set values take precedence over chart defaults and values YAML.
-  # Require the caller's pinned Paragon image rather than the chart default.
-  set {
-    name  = "image.repository"
-    value = var.helm.image_repository
-    type  = "string"
-  }
-
-  set {
-    name  = "image.tag"
-    value = var.helm.image_tag
-    type  = "string"
-  }
-
-  set_sensitive {
-    name  = "config.HOOP_KEY"
-    value = local.hoop_key
-    type  = "string"
-  }
 
   lifecycle {
     precondition {

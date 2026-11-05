@@ -5,7 +5,7 @@ variable "hoop_key" {
   default     = null
 
   validation {
-    condition     = var.hoop_key == null || length(trimspace(var.hoop_key)) > 0
+    condition     = var.hoop_key == null || try(length(trimspace(var.hoop_key)) > 0, false)
     error_message = "hoop_key must not be empty when set."
   }
 }

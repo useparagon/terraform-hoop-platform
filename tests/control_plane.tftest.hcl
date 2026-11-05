@@ -88,7 +88,7 @@ run "helm_agent_uses_supplied_key" {
     agent_id = "existing-agent-id"
   }
   assert {
-    condition     = helm_release.agent.namespace == "paragon" && helm_release.agent.chart == "hoopagent-chart" && contains([for setting in helm_release.agent.set : "${setting.name}=${setting.value}"], "image.repository=useparagon/hoop-agent-tools") && contains([for setting in helm_release.agent.set : "${setting.name}=${setting.value}"], "image.tag=1.2.1")
+    condition     = helm_release.agent.namespace == "paragon" && helm_release.agent.chart == "hoopagent-chart" && yamldecode(helm_release.agent.values[1]).image.repository == "useparagon/hoop-agent-tools" && yamldecode(helm_release.agent.values[1]).image.tag == "1.2.1"
     error_message = "Agent must use the generic Helm chart and caller namespace."
   }
 }

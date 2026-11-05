@@ -21,7 +21,7 @@ run "agent_key_uses_default_gateway" {
   }
 
   assert {
-    condition     = [for s in helm_release.agent.set_sensitive : s.value if s.name == "config.HOOP_KEY"][0] == "grpcs://acme:tok-123@hoop-grpc.ops.paragoninternal.com:8443?mode=standard"
+    condition     = yamldecode(helm_release.agent.values[1]).config.HOOP_KEY == "grpcs://acme:tok-123@hoop-grpc.ops.paragoninternal.com:8443?mode=standard"
     error_message = "agent_key must use the default gRPC gateway when no server is given."
   }
 }
@@ -38,7 +38,7 @@ run "agent_key_parts_are_assembled" {
   }
 
   assert {
-    condition     = [for s in helm_release.agent.set_sensitive : s.value if s.name == "config.HOOP_KEY"][0] == "grpcs://acme:tok-123@hoop-grpc.example.test:8443?mode=standard"
+    condition     = yamldecode(helm_release.agent.values[1]).config.HOOP_KEY == "grpcs://acme:tok-123@hoop-grpc.example.test:8443?mode=standard"
     error_message = "agent_key must be assembled into the standard-mode HOOP_KEY DSN."
   }
 }
@@ -51,12 +51,12 @@ run "hoop_key_is_passed_through" {
   }
 
   assert {
-    condition     = [for s in helm_release.agent.set_sensitive : s.value if s.name == "config.HOOP_KEY"][0] == "grpcs://agent:placeholder@example.test?mode=standard"
+    condition     = yamldecode(helm_release.agent.values[1]).config.HOOP_KEY == "grpcs://agent:placeholder@example.test?mode=standard"
     error_message = "hoop_key must reach the chart unchanged, as a sensitive value."
   }
 
   assert {
-    condition     = length([for s in helm_release.agent.set : s if s.name == "config.HOOP_KEY"]) == 0
+    condition     = !can(yamldecode(helm_release.agent.values[0]).config)
     error_message = "The key must never be set through a non-sensitive set block."
   }
 }
@@ -133,7 +133,7 @@ run "azure_and_gcp_annotations_and_extra_values" {
   }
 
   assert {
-    condition     = length(helm_release.agent.values) == 2 && helm_release.agent.values[1] == "replicaCount: 2"
+    condition     = length(helm_release.agent.values) == 3 && helm_release.agent.values[2] == "replicaCount: 2"
     error_message = "Caller values must follow the generated ServiceAccount values so they can override them."
   }
 }
