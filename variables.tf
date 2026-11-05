@@ -28,10 +28,10 @@ variable "agent_key" {
   default   = null
 
   validation {
-    condition = var.agent_key == null || alltrue([
-      length(trimspace(var.agent_key.name)) > 0,
-      length(trimspace(var.agent_key.token)) > 0,
-    ])
+    condition = var.agent_key == null || try(
+      length(trimspace(var.agent_key.name)) > 0 && length(trimspace(var.agent_key.token)) > 0,
+      false,
+    )
     error_message = "agent_key.name and agent_key.token must not be empty."
   }
 }
@@ -97,7 +97,7 @@ variable "agent" {
       !var.agent.create ||
       (
         var.agent.api_url != null && startswith(var.agent.api_url, "https://") && !endswith(var.agent.api_url, "/") &&
-        var.agent.api_key != null && startswith(var.agent.api_key, "hpk_")
+        var.agent.api_key != null && try(startswith(var.agent.api_key, "hpk_"), false)
       )
     )
     error_message = "When agent.create is true, agent.api_url must be an https URL without a trailing slash and agent.api_key must be an hpk_ key."
@@ -110,7 +110,7 @@ variable "agent_id" {
   default     = null
 
   validation {
-    condition     = var.agent_id == null || length(trimspace(var.agent_id)) > 0
+    condition     = var.agent_id == null || try(length(trimspace(var.agent_id)) > 0, false)
     error_message = "agent_id must not be empty when set."
   }
 }
