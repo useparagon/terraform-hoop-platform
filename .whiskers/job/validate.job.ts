@@ -23,6 +23,17 @@ export class ValidateJob extends GithubActionWorkflowJob {
         new TerraformCheckStep('init'),
         new TerraformCheckStep('validate'),
         new TerraformCheckStep('test'),
+        new GithubActionWorkflowStep({
+          name: 'terraform > checkov',
+          uses: GithubAction.CHECKOV,
+          with: {
+            // The module and the workflows. secrets is empty here and would only add noise.
+            framework: 'terraform,github_actions',
+            directory: '.',
+            quiet: 'true',
+            compact: 'true',
+          },
+        }),
         new TerraformDocsStep(),
       ],
     });
