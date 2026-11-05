@@ -17,7 +17,6 @@ module "hoop" {
   agent_name = "example-agent"
 
   agent = {
-    api_url = local.hoop_api_url # Paragon's Hoop API, from your platform config
     api_key = var.hoop_api_key # TF_VAR_hoop_api_key, never a tfvars file
   }
 
@@ -36,8 +35,7 @@ module "hoop" {
   }
 
   defaults = {
-    access_control_groups = ["dev-team-oncall", "dev-team-managers", "admin"]
-    tags                  = { environment = "staging", cloud = "aws" }
+    tags = { environment = "staging", cloud = "aws" }
   }
 
   postgres = local.hoop_postgres
@@ -153,7 +151,7 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_agent"></a> [agent](#input\_agent) | Agent registration in the Hoop platform. The same for every caller.<br/><br/>create = true (default): the module registers the agent through the Hoop API and removes it on destroy. api\_url and api\_key are required, and agent\_id and agent\_key come from the registration.<br/>create = false: the agent already exists and Hoop will not issue its key again. The module does not call the API, and the caller supplies agent\_id and agent\_key (or hoop\_key). | <pre>object({<br/>    create  = optional(bool, true)<br/>    api_url = optional(string)<br/>    api_key = optional(string)<br/>    mode    = optional(string, "standard")<br/>  })</pre> | `{}` | no |
+| <a name="input_agent"></a> [agent](#input\_agent) | Agent registration in the Hoop platform. The same for every caller.<br/><br/>create = true (default): the module registers the agent through the Hoop API and removes it on destroy. api\_key is required; api\_url defaults to Paragon's Hoop API. agent\_id and agent\_key come from the registration.<br/>create = false: the agent already exists and Hoop will not issue its key again. The module does not call the API, and the caller supplies agent\_id and agent\_key (or hoop\_key). | <pre>object({<br/>    create  = optional(bool, true)<br/>    api_url = optional(string, "https://hoop.ops.paragoninternal.com/api")<br/>    api_key = optional(string)<br/>    mode    = optional(string, "standard")<br/>  })</pre> | `{}` | no |
 | <a name="input_agent_id"></a> [agent\_id](#input\_agent\_id) | ID of an agent that already exists in Hoop. Required when agent.create is false; ignored when the module registers the agent. | `string` | `null` | no |
 | <a name="input_agent_key"></a> [agent\_key](#input\_agent\_key) | Agent key as separate parts. The module assembles grpcs://<name>:<token>@<server>?mode=<mode>. Use it when the token and the gateway address come from different sources. server defaults to grpc\_server. Set exactly one of hoop\_key or agent\_key when agent.create is false. | <pre>object({<br/>    name   = string<br/>    token  = string<br/>    server = optional(string)<br/>    mode   = optional(string, "standard")<br/>  })</pre> | `null` | no |
 | <a name="input_agent_name"></a> [agent\_name](#input\_agent\_name) | Name of the Hoop agent. It becomes part of the HOOP\_KEY, so use a stable, environment-identifying name (for example example-agent). Required when the module registers the agent (agent.create = true). | `string` | `null` | no |

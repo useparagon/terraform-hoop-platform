@@ -81,12 +81,12 @@ variable "agent" {
   description = <<-EOT
     Agent registration in the Hoop platform. The same for every caller.
 
-    create = true (default): the module registers the agent through the Hoop API and removes it on destroy. api_url and api_key are required, and agent_id and agent_key come from the registration.
+    create = true (default): the module registers the agent through the Hoop API and removes it on destroy. api_key is required; api_url defaults to Paragon's Hoop API. agent_id and agent_key come from the registration.
     create = false: the agent already exists and Hoop will not issue its key again. The module does not call the API, and the caller supplies agent_id and agent_key (or hoop_key).
   EOT
   type = object({
     create  = optional(bool, true)
-    api_url = optional(string)
+    api_url = optional(string, "https://hoop.ops.paragoninternal.com/api")
     api_key = optional(string)
     mode    = optional(string, "standard")
   })

@@ -97,3 +97,17 @@ run "existing_agent_requires_id_and_key" {
 
   expect_failures = [helm_release.agent]
 }
+
+# The Paragon API endpoint is the default, so callers only pass the key.
+run "api_url_defaults_to_paragon" {
+  command = plan
+
+  variables {
+    agent = { api_key = "hpk_placeholder" }
+  }
+
+  assert {
+    condition     = terracurl_request.agent[0].url == "https://hoop.ops.paragoninternal.com/api/agents"
+    error_message = "agent.api_url must default to Paragon's Hoop API."
+  }
+}
