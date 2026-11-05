@@ -170,7 +170,7 @@ locals {
 
   postgres_connection_keys = toset([
     for key in local.connection_keys : key
-    if lower(nonsensitive(local.all_connections[key].type)) == "database" && contains(["postgres", "postgresql"], lower(try(nonsensitive(local.all_connections[key].subtype), "")))
+    if lower(nonsensitive(local.all_connections[key].type)) == "database" && contains(["postgres", "postgresql"], try(lower(nonsensitive(local.all_connections[key].subtype)), ""))
   ])
 
   standard_connection_keys = setsubtract(local.connection_keys, local.postgres_connection_keys)

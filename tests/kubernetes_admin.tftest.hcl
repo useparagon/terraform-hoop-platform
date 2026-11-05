@@ -110,3 +110,20 @@ run "can_be_disabled" {
     error_message = "enabled = false must not create cluster objects or the kubectl connection."
   }
 }
+
+# A database connection without subtype must be treated as a standard connection
+# instead of failing the plan on a null subtype.
+run "database_connection_without_subtype" {
+  command = plan
+
+  variables {
+    connections = {
+      db = { type = "database", secrets = {}, access_control_groups = [] }
+    }
+  }
+
+  assert {
+    condition     = contains(keys(hoop_connection.this), "db") && contains(keys(hoop_connection.this), "k8s-admin") && length(hoop_connection.postgres) == 0
+    error_message = "A database connection without subtype must stay standard."
+  }
+}
