@@ -40,9 +40,9 @@ variable "helm" {
   description = "Helm release configuration. Set namespace, chart version, and the Paragon-built agent image repository (including its registry when needed) and immutable image tag explicitly. The chart version and agent image tag are independent. service_account carries cloud workload-identity annotations (eks.amazonaws.com/role-arn, azure.workload.identity/client-id, iam.gke.io/gcp-service-account); values adds any further chart values."
   type = object({
     namespace        = string
-    version          = string
-    image_repository = string
-    image_tag        = string
+    version          = optional(string, "1.184.2")
+    image_repository = optional(string, "useparagon/hoop-agent-tools")
+    image_tag        = optional(string, "1.2.1")
     name             = optional(string, "hoopagent")
     create_namespace = optional(bool, false)
     values           = optional(list(string), [])
