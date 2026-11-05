@@ -4,7 +4,7 @@ resource "hoop_connection" "this" {
 
   name     = nonsensitive(coalesce(local.all_connections[each.key].name, each.key))
   type     = nonsensitive(local.all_connections[each.key].type)
-  agent_id = var.agent_id
+  agent_id = local.agent_id
 
   subtype                = local.all_connections[each.key].subtype
   jira_issue_template_id = local.all_connections[each.key].jira_issue_template_id
@@ -38,7 +38,7 @@ resource "hoop_connection" "postgres" {
 
   name     = nonsensitive(coalesce(local.all_connections[each.key].name, each.key))
   type     = nonsensitive(local.all_connections[each.key].type)
-  agent_id = var.agent_id
+  agent_id = local.agent_id
 
   subtype                = local.all_connections[each.key].subtype
   jira_issue_template_id = local.all_connections[each.key].jira_issue_template_id

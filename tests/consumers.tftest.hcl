@@ -1,13 +1,19 @@
 mock_provider "hoop" {}
 mock_provider "helm" {}
+mock_provider "kubernetes" {}
+mock_provider "terracurl" {}
+mock_provider "http" {}
+mock_provider "time" {}
 
 variables {
+  agent    = { create = false }
+  defaults = { access_control_groups = [], postgres_guardrail_rules = [], redis_guardrail_rules = [] }
   hoop_key = "grpcs://agent:placeholder@example.test?mode=standard"
   helm     = { namespace = "paragon", version = "1.0.0", image_repository = "useparagon/hoop-agent-tools", image_tag = "1.2.1" }
 }
 
 # Same module, different caller-computed connection maps. No cloud selector.
-run "enterprise_multi_cloud_values" {
+run "multi_cloud_values" {
   command = plan
 
   variables {
@@ -61,7 +67,7 @@ run "enterprise_multi_cloud_values" {
 
   assert {
     condition     = length(hoop_connection.postgres) == 1 && length(hoop_connection.this) == 2
-    error_message = "Enterprise maps must create exactly the supplied connections, regardless of source cloud."
+    error_message = "Caller maps must create exactly the supplied connections, regardless of source cloud."
   }
 
   assert {
@@ -76,18 +82,18 @@ run "enterprise_multi_cloud_values" {
   }
 }
 
-run "managed_sync_and_agent_os" {
+run "two_postgres_and_redis" {
   command = plan
 
   variables {
     agent_id = "kubernetes-agent"
     postgres = {
-      managed_sync = {
-        name                  = "managed-sync-db"
+      primary = {
+        name                  = "primary-db"
         host                  = "postgres.service.local"
         user                  = "reader"
         password              = "placeholder"
-        database              = "managed_sync"
+        database              = "primary"
         access_control_groups = ["operations"]
       }
       agent_os = {
@@ -120,11 +126,11 @@ run "managed_sync_and_agent_os" {
 
   assert {
     condition     = length(hoop_connection.postgres) == 2 && length(hoop_connection.this) == 2
-    error_message = "Managed Sync and Agent OS must share generic Postgres/Redis mapping without dedicated environment modules."
+    error_message = "Two Postgres and Redis callers must share generic Postgres/Redis mapping without dedicated environment modules."
   }
 
   assert {
-    condition     = hoop_connection.postgres["postgres-managed_sync"].secrets["envvar:PORT"] == "5432" && hoop_connection.postgres["postgres-managed_sync"].access_schema == "enabled"
+    condition     = hoop_connection.postgres["postgres-primary"].secrets["envvar:PORT"] == "5432" && hoop_connection.postgres["postgres-primary"].access_schema == "enabled"
     error_message = "PostgreSQL defaults and native secret mapping should be applied."
   }
 
@@ -171,11 +177,11 @@ run "redis_custom_command" {
   }
 }
 
-run "observability_values" {
+run "metrics_values" {
   command = plan
 
   variables {
-    agent_id = "observability-agent"
+    agent_id = "metrics-agent"
     connections = {
       metrics = {
         name                  = "metrics"
@@ -184,7 +190,7 @@ run "observability_values" {
         command               = ["bash"]
         access_mode_connect   = "enabled"
         access_control_groups = ["operations"]
-        tags                  = { "service-type" = "observability" }
+        tags                  = { "service-type" = "metrics" }
         secrets               = { "envvar:HOST" = "metrics.example.test", "envvar:PORT" = "8428" }
       }
     }
@@ -192,11 +198,11 @@ run "observability_values" {
 
   assert {
     condition     = length(hoop_connection.this) == 1 && length(hoop_connection.postgres) == 0
-    error_message = "Observability uses the same module without any Enterprise or Cloud-specific inputs."
+    error_message = "A metrics caller uses the same module without cloud-specific inputs."
   }
 
   assert {
     condition     = length(hoop_plugin_connection.access_control) == 1
-    error_message = "Observability must preserve per-connection Access Control."
+    error_message = "Metrics must preserve per-connection Access Control."
   }
 }

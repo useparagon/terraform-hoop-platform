@@ -1,7 +1,13 @@
 mock_provider "hoop" {}
 mock_provider "helm" {}
+mock_provider "kubernetes" {}
+mock_provider "terracurl" {}
+mock_provider "http" {}
+mock_provider "time" {}
 
 variables {
+  agent    = { create = false }
+  defaults = { access_control_groups = [], postgres_guardrail_rules = [], redis_guardrail_rules = [] }
   hoop_key = "grpcs://agent:placeholder@example.test?mode=standard"
   helm     = { namespace = "paragon", version = "1.0.0", image_repository = "useparagon/hoop-agent-tools", image_tag = "1.2.1" }
 }

@@ -1,4 +1,30 @@
 locals {
+  # Paragon's gateway is the default; set grpc_server to point elsewhere.
+  grpc_server = coalesce(var.grpc_server, "hoop-grpc.ops.paragoninternal.com:8443")
+
+  # The registered agent wins; otherwise the caller supplies the key whole or in parts.
+  hoop_key = (
+    local.agent_registered ? local.registered_hoop_key :
+    var.agent_key == null ? var.hoop_key :
+    "grpcs://${var.agent_key.name}:${var.agent_key.token}@${coalesce(var.agent_key.server, local.grpc_server)}?mode=${var.agent_key.mode}"
+  )
+
+  agent_registered    = var.agent.create
+  registered_dsn      = local.agent_registered ? jsondecode(terracurl_request.agent[0].sensitive_response).token : null
+  registered_parts    = local.agent_registered ? regex("^[a-z0-9+.-]+://(?P<name>[^:]+):(?P<token>[^@]+)@(?P<server>[^?]+)(?:\\?mode=(?P<mode>.+))?$", local.registered_dsn) : null
+  registered_hoop_key = local.agent_registered ? "grpcs://${local.registered_parts.name}:${local.registered_parts.token}@${local.grpc_server}?mode=${coalesce(local.registered_parts.mode, var.agent.mode)}" : null
+  agent_id            = local.agent_registered ? jsondecode(data.http.agent[0].response_body).id : var.agent_id
+
+  # Chart values that carry the ServiceAccount (and its workload-identity annotations).
+  # Placed first so values supplied by the caller in helm.values can still override them.
+  service_account_values = yamlencode({
+    serviceAccount = merge(
+      { create = var.helm.service_account.create },
+      var.helm.service_account.name != null ? { name = var.helm.service_account.name } : {},
+      length(var.helm.service_account.annotations) > 0 ? { annotations = var.helm.service_account.annotations } : {},
+    )
+  })
+
   postgres_connections = {
     for key, conn in var.postgres : "postgres-${key}" => {
       name                   = conn.name
@@ -15,7 +41,7 @@ locals {
         "envvar:SSLMODE" = conn.sslmode
       }
       tags                  = conn.tags
-      guardrail_rules       = conn.guardrail_rules
+      guardrail_rules       = length(conn.guardrail_rules) > 0 ? conn.guardrail_rules : var.defaults.postgres_guardrail_rules
       reviewers             = conn.reviewers
       access_control_groups = conn.access_control_groups
       access_mode_runbooks  = "enabled"
@@ -47,7 +73,7 @@ locals {
         conn.ssl && conn.ca_certificate != null ? { "filesystem:REDIS_CACERT_PATH" = conn.ca_certificate } : {}
       )
       tags                  = conn.tags
-      guardrail_rules       = conn.guardrail_rules
+      guardrail_rules       = length(conn.guardrail_rules) > 0 ? conn.guardrail_rules : var.defaults.redis_guardrail_rules
       reviewers             = conn.reviewers
       access_control_groups = conn.access_control_groups
       access_mode_runbooks  = "enabled"
@@ -65,7 +91,49 @@ locals {
     )
   )
 
-  all_connections  = merge(var.connections, local.postgres_connections, local.redis_connections)
+  kubernetes_admin_enabled = var.kubernetes_admin != null && var.kubernetes_admin.enabled
+
+  kubernetes_admin_connection = local.kubernetes_admin_enabled ? {
+    "k8s-admin" = {
+      name    = coalesce(var.kubernetes_admin.name, "k8s-admin")
+      type    = "custom"
+      subtype = null
+      command = ["bash"]
+      secrets = merge(
+        var.kubernetes_admin.extra_secrets,
+        {
+          "envvar:REMOTE_URL"           = var.kubernetes_admin.remote_url
+          "envvar:INSECURE"             = tostring(var.kubernetes_admin.insecure)
+          "envvar:KUBECTL_NAMESPACE"    = coalesce(var.kubernetes_admin.kubectl_namespace, var.helm.namespace)
+          "envvar:HEADER_AUTHORIZATION" = "Bearer ${try(data.kubernetes_secret.admin_token[0].data["token"], "")}"
+        },
+      )
+      tags                   = var.kubernetes_admin.tags
+      guardrail_rules        = var.kubernetes_admin.guardrail_rules
+      reviewers              = var.kubernetes_admin.reviewers
+      access_control_groups  = var.kubernetes_admin.access_control_groups
+      access_mode_runbooks   = var.kubernetes_admin.access_mode_runbooks
+      access_mode_exec       = var.kubernetes_admin.access_mode_exec
+      access_mode_connect    = var.kubernetes_admin.access_mode_connect
+      access_schema          = "disabled"
+      jira_issue_template_id = null
+    }
+  } : {}
+
+  # Caller entries first, then the shared policy from var.defaults fills the gaps.
+  merged_connections = merge(var.connections, local.postgres_connections, local.redis_connections, local.kubernetes_admin_connection)
+
+  all_connections = {
+    for key, conn in local.merged_connections : key => merge(conn, {
+      tags = merge(var.defaults.tags, conn.tags)
+      access_control_groups = (
+        length(conn.access_control_groups) > 0
+        ? conn.access_control_groups
+        : var.defaults.access_control_groups
+      )
+    })
+  }
+
   connection_names = [for key, conn in local.all_connections : nonsensitive(coalesce(conn.name, key))]
 
   # Terraform resource keys and filter fields cannot be sensitive. The caller
