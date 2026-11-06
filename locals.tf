@@ -180,13 +180,6 @@ locals {
     if length(nonsensitive(local.all_connections[key].access_control_groups)) > 0
   ])
 
-  # Reviewers are who Slack notifies. An empty config keeps the channel Ops
-  # already set on the Hoop organization; this module does not own that plugin.
-  slack_keys = toset([
-    for key in local.connection_keys : key
-    if length(nonsensitive(local.all_connections[key].reviewers)) > 0
-  ])
-
   connection_ids = merge(
     { for key, connection in hoop_connection.this : key => connection.id },
     { for key, connection in hoop_connection.postgres : key => connection.id },

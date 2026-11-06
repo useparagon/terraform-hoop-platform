@@ -7,9 +7,9 @@ It does four things:
 1. Registers the agent in Hoop, or adopts one that already exists.
 2. Installs the agent with Helm.
 3. Creates the ServiceAccount, the ClusterRoleBinding and the token behind the `k8s-admin` connection.
-4. Creates the Hoop connections (Postgres, Redis, applications, kubectl) with their access control, and attaches Slack to every connection that has reviewers.
+4. Creates the Hoop connections (Postgres, Redis, applications, kubectl) with their access control.
 
-The module is cloud-agnostic. Everything cloud-specific (the IAM role, Azure identity or GCP service account, and their trust) stays in the caller and reaches the agent as a ServiceAccount annotation. Slack on a connection uses an empty config, so notifications go to the channel Ops already set on the Hoop organization. This module does not manage that organization-level plugin.
+The module is cloud-agnostic. Everything cloud-specific (the IAM role, Azure identity or GCP service account, and their trust) stays in the caller and reaches the agent as a ServiceAccount annotation. Slack integration is out of scope and is managed separately.
 
 ```hcl
 module "hoop" {
@@ -57,7 +57,6 @@ Nothing in the module. Only the values:
 - **Keys and names.** Postgres entries become `postgres-<key>`, Redis entries `redis-<key>`, the kubectl connection is `k8s-admin`, and `connections` keys stay as given. Duplicate keys or final connection names fail the plan. Map keys, names, types and group names must not be secret.
 - **Redis.** The default command adds `--tls` when `ssl = true` and mounts `ca_certificate` as a file. Authentication goes through `REDISCLI_AUTH`. `extra_secrets` adds keys but cannot override HOST, PORT, DB_NUMBER, REDISCLI_AUTH or REDIS_CACERT_PATH.
 - **Postgres.** `sslmode` defaults to `require`. The provider normalizes the Postgres command, so that resource ignores `command` changes.
-- **Slack.** A connection with reviewers gets the Slack plugin. The config is empty on purpose: the notification channel belongs to the Hoop organization, not to this module. Connections without reviewers get no Slack plugin.
 - **State.** The API key, connection passwords and certificates can end up in Terraform state. Use encrypted, access-restricted remote state.
 
 ## Migrating an existing Hoop workspace
@@ -86,7 +85,7 @@ moved {
 }
 ```
 
-Connections are recreated, not moved: the new module creates them under new Terraform addresses and destroys the old ones in the same plan, so connections are briefly unavailable. An apply can hit a "name already exists" error because create and delete run in parallel; one retry after the old connection is gone resolves it. Check the plan before applying: the old in-tree modules also owned cloud IAM, which this module deliberately does not. Per-connection Slack follows the reviewers on each connection. The organization-level Slack plugin is left alone.
+Connections are recreated, not moved: the new module creates them under new Terraform addresses and destroys the old ones in the same plan, so connections are briefly unavailable. An apply can hit a "name already exists" error because create and delete run in parallel; one retry after the old connection is gone resolves it. Check the plan before applying: the old in-tree modules also owned cloud IAM, which this module deliberately does not. Slack configuration is not touched by this module.
 
 ## Development
 
@@ -132,7 +131,6 @@ No modules.
 | [hoop_connection.postgres](https://registry.terraform.io/providers/hoophq/hoop/latest/docs/resources/connection) | resource |
 | [hoop_connection.this](https://registry.terraform.io/providers/hoophq/hoop/latest/docs/resources/connection) | resource |
 | [hoop_plugin_connection.access_control](https://registry.terraform.io/providers/hoophq/hoop/latest/docs/resources/plugin_connection) | resource |
-| [hoop_plugin_connection.slack](https://registry.terraform.io/providers/hoophq/hoop/latest/docs/resources/plugin_connection) | resource |
 | [kubernetes_cluster_role_binding.admin](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/cluster_role_binding) | resource |
 | [kubernetes_secret.admin_token](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret) | resource |
 | [kubernetes_service_account.admin](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/service_account) | resource |
