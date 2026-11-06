@@ -62,6 +62,10 @@ run "postgres_and_standard" {
     error_message = "Access Control should be attached only when groups are provided."
   }
 
+  assert {
+    condition     = length(hoop_plugin_connection.slack) == 1 && hoop_plugin_connection.slack["app"].plugin_name == "slack" && length(hoop_plugin_connection.slack["app"].config) == 0
+    error_message = "Slack is attached only to connections with reviewers, and the config stays empty so the organization channel is used."
+  }
 }
 
 run "postgres_subtype_aliases" {

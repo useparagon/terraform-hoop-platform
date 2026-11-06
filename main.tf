@@ -75,3 +75,11 @@ resource "hoop_plugin_connection" "access_control" {
   connection_id = local.connection_ids[each.key]
   config        = local.all_connections[each.key].access_control_groups
 }
+
+resource "hoop_plugin_connection" "slack" {
+  for_each = local.slack_keys
+
+  plugin_name   = "slack"
+  connection_id = local.connection_ids[each.key]
+  config        = []
+}
